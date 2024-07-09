@@ -7,7 +7,7 @@
 			<input id="Addinput" @click="xiaojianp" value="+"></input>
 		</div>
 		<div id="datetime">
-			<text id="datetimetext">更新于：{{datetime}}</text>
+			<text id="datetimetext">更新于： {{datetime}}</text>
 		</div>
 		
 		<scroll id="scrollId" scroll-y="true"  bounces="true" style="scroll-snap-type: y mandatory" onscrollbottom="handlescrollbottom" >
