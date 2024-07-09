@@ -1,0 +1,262 @@
+<template>
+	<div class="page">
+		<div  id="gupiaocode">
+			<text id="gupiaocodetext"> {{code}}</text>
+		</div>
+
+		<scroll id="scrollId" scroll-y="true" scroll-x="true" style="scroll-snap-type: y mandatory"  >
+			 <input class="listitem" value="{{ $item.Code }}  {{ $item.Name }}" for="{{list}}" tid="uniqueId" @click="SaveClick($item.Code, $item.QuoteID,$item.Name )"></input> 
+		</scroll>
+
+
+		<div id="shurufa">
+				<input value="1"  @click="onButtonClick('1')"></input>
+				<input value="2"  @click="onButtonClick('2')"></input>
+				<input value="3"  @click="onButtonClick('3')"></input>
+				<input value="4"  @click="onButtonClick('4')"></input>
+				<input value="5"  @click="onButtonClick('5')"></input>
+				<input value="6"  @click="onButtonClick('6')"></input>
+				<input value="7"  @click="onButtonClick('7')"></input>
+				<input value="8"  @click="onButtonClick('8')"></input>
+				<input value="9"  @click="onButtonClick('9')"></input>
+				<input value="0"  @click="onButtonClick('0')"></input>
+				<input value="  " style="background-color: black" ></input>
+				<input style="width:110px ;background-color: blueviolet;" value="搜索"  @click="sousuo"></input>
+				<input style="width:110px" value="退格"  @click="delete"></input>
+				<input value="  " style="background-color: black" ></input>
+				
+		</div>
+	
+	</div>
+</template>
+
+<script>
+import vibrator from '@system.vibrator' 
+import fetch from '@system.fetch' 
+import prompt from "@system.prompt";
+import file from "@system.file";
+export default {
+	private: {
+		list: [],
+		code:""
+	},
+	SaveClick(Code,QuoteID,Name){
+		
+		var that=this
+		this.accessText().then(res=>{
+			that.readToText().then(res2=>{
+				var list=JSON.parse(res2)
+				var shifou=false
+				for(var i=0;i<list.length;i++){
+					if(list[i].QuoteID==QuoteID){
+						shifou=true;
+					}
+				}
+
+				if(!shifou){
+					list.push({"Code":Code,"QuoteID":QuoteID,"Name":Name,"jiage":0 ,"baifenbi": 0,"color":"white" })
+					console.log(list)
+					that.SaveToText(JSON.stringify(list))
+				}else{
+					prompt.showToast({
+						message: "已存在自选股中",
+						duration: 1000,
+					});
+				}
+
+			}).catch(err => {
+				prompt.showToast({
+						message: "错误",
+						duration: 1000,
+				});
+  			})
+		}).catch(err => {
+			that.SaveToText('[{"QuoteID":"'+QuoteID+'","Name":"'+Name+'","Code":"'+Code+'" ,"jiage":0,"baifenbi":0,"color":"white"}]')
+  		})
+		
+	},
+
+	readToText() {
+		return new Promise((resolve, reject) => {
+			file.readText({
+				uri: "internal://mass/zixuan.txt",
+				success: function (data) {
+					resolve(data.text)
+				},
+				fail: function (data, code) {
+					reject('读取自选股失败')
+				},
+			});
+		})
+	},
+	SaveToText(str){
+		//写文本到文件
+		file.writeText({
+			uri: "internal://mass/zixuan.txt",
+			text: str,
+			append:false,
+			success: function () {
+				prompt.showToast({
+					message: "添加成功",
+					duration: 1000,
+				});
+			},
+			fail: function (data, code) {
+				prompt.showToast({
+					message: `添加失败, data=${data},code = ${code}`,
+					duration: 1000,
+				});
+			},
+		});
+	},
+	delete(){
+		var that=this
+		this.code=this.code.substring(0,this.code.length-1)
+	
+	},
+	accessText() {
+		return new Promise((resolve, reject) => {
+			file.access({
+				uri: "internal://mass/zixuan.txt",
+				success: function (data) {
+					resolve('存在自选股配置')
+				},
+				fail: function (data, code) {
+					reject('不存在自选股配置')
+				},
+			});
+
+		})
+	},
+	qinkon() {
+	/*	vibrator.vibrate({
+			mode: 'short'
+		})*/
+		this.code=""
+		this.list=[]
+  	},
+	onButtonClick(str) {
+		/*vibrator.vibrate({
+			mode: 'short'
+		})*/
+		var that=this
+		this.code=this.code+str
+		
+  	},
+	sousuo(){
+		var that=this
+		fetch.fetch({
+			url: 'https://searchadapter.eastmoney.com/api/suggest/get?input='+this.code+'&type=14&count=5',
+			responseType: 'json',
+			success: function(response) {
+				if(response.data.QuotationCodeTable.Data){
+					console.log(response.data.QuotationCodeTable.Data)
+					that.list=response.data.QuotationCodeTable.Data
+				}else{
+					that.list=[]
+				}
+			},
+			fail: function(data, code) {
+				that.list=[]
+
+				console.log(`handling fail, errMsg = ${data}`)
+				console.log(`handling fail, errCode = ${code}`)
+			}
+			})
+	},
+	onInit() {
+		console.info("初始化");
+	},
+	onShow() {
+
+		this.$element("gupiaocode").getScrollRect({
+			success({ width, height }) {
+				console.log("宽度", width);
+				console.log("高度", height);
+			},
+		});
+	},
+};
+</script>
+
+<style>
+#scrollId {
+	top: 40px;
+	height:180px;
+	width: 360px;
+	/* 交叉轴居中 */
+	align-items: center;
+	/* 纵向排列 */
+	flex-direction: column;
+}
+.listitem {
+	/* 有剩余空间时，允许被拉伸 */
+	/*flex-grow: 1;*/
+	/* 空间不够用时，不允许被压缩 */
+	flex-shrink: 0;
+	/* 主轴居中 */
+	justify-content: center;
+	font-size: 25px;
+	height: 50px;
+	width: 360px;
+	margin: 5px;
+	border-radius: 20px;
+	background-color: #5f4242;
+
+
+}
+#gupiaocodetext text {
+	color: white;
+	text-overflow: ellipsis;
+}
+#gupiaocode{
+	top:30px;
+	width: 200px;
+	padding: 5px;
+	border-radius: 10px;
+	background-color: #2a292c96 ;
+}
+#shurufa {
+	top:40px;
+	width: 380px;
+	/* 交叉轴居中 */
+	align-items: flex-start;
+	/* 纵向排列 */
+	flex-direction: row;
+	flex-wrap:wrap ;
+	justify-content: space-around ;
+	
+}
+input{
+	/* 空间不够用时，不允许被压缩 */
+	flex-shrink: 0;
+	margin: 3px;
+	width: 60px;
+	height: 60px;
+	color:white;
+	background-color: #2c292996;
+	border-radius: 10px;
+}
+.page {
+	/* 交叉轴居中 */
+	align-items: center;
+	/* 纵向排列 */
+	flex-direction: column;
+	background-color: #000000;
+	border-radius: 240px;
+}
+.item {
+	/* 有剩余空间时，允许被拉伸 */
+	/*flex-grow: 1;*/
+	/* 空间不够用时，不允许被压缩 */
+	/*flex-shrink: 0;*/
+	/* 主轴居中 */
+	justify-content: center;
+	height: 50px;
+	width: 50px;
+	margin: 5px;
+	border-radius: 20px;
+	background-color: #5f4242;
+}
+
+</style>

@@ -1,0 +1,12 @@
+{
+    "list": [
+        { "name": "真视通", "uniqueId": 1},
+        { "name": "贵州茅台", "uniqueId": 2},
+        { "name": "赛力斯", "uniqueId": 3},
+        { "name": "赛力斯", "uniqueId": 4},
+        { "name": "赛力斯", "uniqueId": 5},
+        { "name": "赛力斯", "uniqueId": 6},
+        { "name": "赛力斯", "uniqueId": 7},
+        { "name": "赛力斯", "uniqueId": 8}
+    ]
+}

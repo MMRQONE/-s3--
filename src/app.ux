@@ -1,0 +1,32 @@
+<script>
+export default {
+  onCreate() {
+    console.log('app created')
+  },
+  onDestroy() {
+    console.log('app destroyed')
+  },
+  onShow() { 
+    console.info('Application onShow')
+  },
+}
+</script>
+<style>
+/* 公共样式 */
+text {
+  color: #ffffff;
+}
+
+.column {
+  flex-direction: column;
+}
+
+.row {
+  flex-direction: row;
+}
+
+.center {
+  align-items: center;
+  justify-content: center;
+}
+</style>

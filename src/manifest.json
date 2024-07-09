@@ -1,0 +1,46 @@
+{
+  "package": "com.application.watch.dinpan",
+  "name": "操盘手",
+  "versionName": "1.0.0",
+  "versionCode": 1,
+  "minPlatformVersion": 1000,
+  "icon": "/common/logo.png",
+  "deviceTypeList": [
+    "watch"
+  ],
+  "features": [
+    {
+      "name": "system.router"
+    },
+    {
+      "name": "system.file"
+    },
+    {
+      "name": "system.prompt"
+    },
+    {
+      "name": "system.vibrator"
+    },
+    {
+      "name": "system.fetch"
+    }
+  ],
+  "config": {
+    "logLevel": "log",
+    "designWidth": 480
+  },
+  "router": {
+    "entry": "pages/gupiao",
+    "pages": {
+      "pages/gupiao": {
+        "component": "gupiao"
+      },
+      "pages/Setting": {
+        "component": "Setting"
+      },
+      "pages/xiaojianp": {
+        "component": "xiaojianp"
+      }
+    }
+  }
+}

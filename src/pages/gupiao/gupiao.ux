@@ -1,0 +1,378 @@
+<template>
+	<div class="page">
+		<div id="setting">
+			<input id="settinginput" @click="Setting" value="设置"></input>
+		</div>
+		<div id="Add">
+			<input id="Addinput" @click="xiaojianp" value="+"></input>
+		</div>
+		<div id="datetime">
+			<text id="datetimetext">更新于：{{datetime}}</text>
+		</div>
+		
+		<scroll id="scrollId" scroll-y="true"  bounces="true" style="scroll-snap-type: y mandatory" onscrollbottom="handlescrollbottom" >
+			<div class="item" for="{{list}}" style="border-color:{{ $item.color }}" @click="chaxunhanqin( $item.QuoteID)" @longpress="deleteitem($item.QuoteID,$item.Name)">
+					<text class="itemtext" style="color:{{ $item.color }}" >{{ $item.Code }}</text>
+					<text class="itemtext" style="color:{{ $item.color }}" >{{ $item.Name }}</text>
+					<text class="itemtext" style="color:{{ $item.color }}" >{{ $item.jiage }}</text>
+					<text class="itemtext" style="color:{{ $item.color }}" >{{ $item.baifenbi }}%</text>
+			</div>
+		</scroll>
+		<div id="delectdiv" show="{{delectdivvisible}}" style="top:{{delectY}};left:{{delectX}}">
+			<text id="delectdivtext"> 删除 {{deletename}}?</text>
+			<input id="delectinput"value="确定" @click="shifoudelect('确定',deleteQuoteID)"> 
+			<input id="delectinput"value="取消" @click="shifoudelect('取消',deleteQuoteID)"> 
+		</div>
+	</div>
+</template>
+
+<script>
+import fetch from '@system.fetch' 
+import router from "@system.router";
+import prompt from "@system.prompt";
+import file from "@system.file";
+export default {
+	data: {
+		list: [
+		],
+		deleteQuoteID:null,
+		deletename:null,
+		delectX:"70px",
+		delectY:"100px",
+		delectdivvisible:false,
+		datetime:"00:00:00",
+		Interval:null
+	},
+	shifoudelect(str,deleteQuoteID){
+		var that=this
+		console.log(str,deleteQuoteID)
+		if(str=="确定"){
+			this.delectdivvisible=false
+			this.readToText().then(res=>{
+				var list=JSON.parse(res)
+				for(var i=0;i<list.length;i++){
+					if(list[i].QuoteID==deleteQuoteID){
+						console.log(list[i])
+						list.splice(i,1)
+					}
+				}
+				console.log(list)
+				that.SaveToText(JSON.stringify(list))
+				that.read()
+
+			}).catch(err => {
+				prompt.showToast({
+						message: "错误",
+						duration: 1000,
+				});
+  			})
+		}
+		else if(str="取消"){
+			this.delectdivvisible=false
+		}
+		else{
+			this.delectdivvisible=false
+		}
+	},
+	deleteitem(QuoteID,Name,e){
+		this.delectdivvisible=true
+		this.deletename=Name
+		this.deleteQuoteID=QuoteID
+		//this.delectX=e.clientX
+		this.delectY=e.clientY
+	},
+	chaxunhanqin(secids){
+		var that=this
+
+		fetch.fetch({
+			url: 'https://push2.eastmoney.com/api/qt/ulist/get?pi=0&fields=f12,f13,f19,f14,f139,f148,f2,f4,f1,f125,f18,f3,f152,f5,f30,f31,f32,f8,f6,f9&secids='+secids,
+			responseType: 'json',
+			success: function(response) {
+				if(response.data.data.total>0){
+					var now = new Date();
+					that.datetime=now.getHours()+":"+now.getMinutes()+":"+now.getSeconds()
+					for(var j=0;j<response.data.data.total;j++){
+						for(var i=0;i<that.list.length;i++){
+							if(that.list[i].Code==response.data.data.diff[j].f12){
+							//	console.log(response.data.data.diff[j])
+							//	console.log(Date(),that.list[i].Name ,response.data.data.diff[j].f2/Math.pow(10,response.data.data.diff[j].f1),response.data.data.diff[j].f3/Math.pow(10,2))
+								that.list[i].jiage=response.data.data.diff[j].f2/Math.pow(10,response.data.data.diff[j].f1)
+								that.list[i].baifenbi=response.data.data.diff[j].f3/Math.pow(10,2)
+								if(response.data.data.diff[j].f3>0){
+									that.list[i].color="red"
+								}else if(response.data.data.diff[j].f3<0){
+									that.list[i].color="lawngreen"
+								}else{
+									that.list[i].color="white"
+								}
+								break;
+							}
+						}
+					}
+
+				}else{
+
+				}
+			},
+			fail: function(data, code) {
+
+				console.log(`handling fail, errMsg = ${data}`)
+				console.log(`handling fail, errCode = ${code}`)
+			}
+			})
+
+	},
+	onInit() {
+		console.info("初始化");
+		
+	},
+	readToSetText() {
+		return new Promise((resolve, reject) => {
+			file.readText({
+				uri: "internal://mass/setting.txt",
+				success: function (data) {
+					resolve(data.text)
+				},
+				fail: function (data, code) {
+					reject('读取配置失败')
+				},
+			});
+		})
+	},
+	read() {
+		var that=this
+		file.readText({
+			uri: "internal://mass/zixuan.txt",
+			success: function (data) {
+				that.list=JSON.parse(data.text)
+			},
+			fail: function (data, code) {
+				console.log(`handling fail, code = ${code}`);
+			},
+		});
+	},
+	onShow() {
+		var that=this
+		this.read()
+		setTimeout(function(){
+			var sss=[]
+			for(var i=0;i<that.list.length;i++){
+				sss.push(that.list[i].QuoteID)
+			}
+			if(sss.length>0){
+					that.chaxunhanqin(sss.join(","))
+				}
+		},1000)
+		
+		this.readToSetText().then(res=>{
+			that.Interval=setInterval(function(){
+				var sss=[]
+				for(var i=0;i<that.list.length;i++){
+					sss.push(that.list[i].QuoteID)
+				}
+				if(sss.length>0){
+					that.chaxunhanqin(sss.join(","))
+				}
+			},res*1000)
+		}).catch(err=>{
+			that.Interval=setInterval(function(){
+				var sss=[]
+				for(var i=0;i<that.list.length;i++){
+					sss.push(that.list[i].QuoteID)
+				}
+				if(sss.length>0){
+					that.chaxunhanqin(sss.join(","))
+				}
+			},5000)
+		})
+// setInterval(function(){
+// 	that.$element('scrollId').scrollBy({
+//         top: 10,
+//         left: 0,
+//         behavior: 'smooth'
+//       })
+
+// },100)
+		
+	},
+	onHide(){
+		clearInterval(this.Interval)
+	},
+	xiaojianp() {
+		// 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+		router.push({
+			uri: "/pages/xiaojianp",
+		});
+	},
+	Setting() {
+		// 跳转到应用内的某个页面，router用法详见：文档->接口->页面路由
+		router.push({
+			uri: "/pages/Setting",
+		});
+	},
+	readToText() {
+		return new Promise((resolve, reject) => {
+			file.readText({
+				uri: "internal://mass/zixuan.txt",
+				success: function (data) {
+					resolve(data.text)
+				},
+				fail: function (data, code) {
+					reject('读取自选股失败')
+				},
+			});
+		})
+	},
+	SaveToText(str){
+		//写文本到文件
+		file.writeText({
+			uri: "internal://mass/zixuan.txt",
+			text: str,
+			append:false,
+			success: function () {
+				prompt.showToast({
+					message: "删除成功",
+					duration: 1000,
+				});
+			},
+			fail: function (data, code) {
+				prompt.showToast({
+					message: `删除失败, data=${data},code = ${code}`,
+					duration: 1000,
+				});
+			},
+		});
+	},
+	handlescrollbottom() {
+      console.info('scrolled bottom.')
+	 // this.scrollTop();
+    },
+	scrollTop() {
+      console.info('1111')
+      this.$element('scrollId').scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      })
+    }
+};
+</script>
+
+<style>
+#delectinput{
+	border-style:solid;
+	border-width:1px;
+	border-color: white;
+	width: 90px;
+	height: 60px;
+	font-size: 25px;
+	color: white;
+	background-color: darkblue;
+}
+#delectdiv{
+	padding-left:5px;
+	padding-right:5px;
+	border-radius: 20px;
+	border-style:solid;
+	border-width:1px;
+	border-color: white;
+	
+	height: 60px;
+	position: absolute;
+	background-color:#000000;
+}
+#delectdivtext{
+	height: 60px;
+	font-size: 25px;
+}
+#datetime{
+	position: absolute;
+	top: 22px;
+}
+#datetimetext{
+	font-size: 20px;
+
+}
+#setting{
+	justify-content:center;
+	position: absolute;
+	width: 100px;
+	height: 50px;
+	top: 50px;
+	left: 270px;
+}
+#settinginput {
+	border-style:solid;
+	border-width:1px;
+	border-color: white;
+
+	height: 50px;
+	background-color:black;
+	color: white;
+	width: 100px;
+}
+#Add{
+	position: absolute;
+	height: 50px;
+	width: 150px;
+	top: 50px;
+	left: 110px;
+}
+#Addinput{
+	border-style:solid;
+	border-width:1px;
+	border-color: white;
+
+	background-color:black;
+	color: white;
+	height: 50px;
+	width: 150px;
+}
+#scrollId {
+	top: 110px;
+	height: 260px;
+	width: 400px;
+	/* 交叉轴居中 */
+	align-items: center;
+	/* 纵向排列 */
+	flex-direction: column;
+}
+.page {
+	/* 交叉轴居中 */
+	align-items: center;
+	/* 纵向排列 */
+	flex-direction: column;
+
+	background-color: #000000;
+	border-radius: 240px;
+}
+.item {
+	/* 有剩余空间时，允许被拉伸 */
+	/*flex-grow: 1;*/
+	/* 空间不够用时，不允许被压缩 */
+	/*flex-shrink: 0;*/
+	/* 主轴居中 */
+	justify-content:space-between;
+	height: 50px;
+	width: 100%;
+	margin-bottom: 5px;
+	border-radius: 20px;
+	/*background-color: #5f4242;*/
+	background-color: black;
+	padding-left: 10px;
+	padding-right: 10px;
+
+	padding-top: 10px;
+	padding-bottom: 10px;
+	border-style:solid;
+	border-width:1px;
+	border-color: white;
+}
+.itemtext{
+	justify-content:space-between;
+	font-size: 25px;
+	color: white;
+	font-weight:100;
+}
+
+</style>
